@@ -18,9 +18,20 @@ All data stays in the learner's browser. Nothing is sent to any server.
 
 ### Prerequisites
 
-- [LibreOffice](https://www.libreoffice.org/) (for converting `.pptx` to images)
+- [LibreOffice](https://www.libreoffice.org/) — converts `.pptx` to PDF
+- [poppler](https://poppler.freedesktop.org/) (recommended) or [ImageMagick](https://imagemagick.org/) — splits PDF into per-slide PNGs
 - A static file server for local testing (`npx serve` or `python3 -m http.server`)
 - Any LLM for generating prompts (Claude, ChatGPT, Gemini, etc.)
+
+**Quick install (macOS):**
+```bash
+brew install --cask libreoffice && brew install poppler
+```
+
+**Quick install (Ubuntu/Debian):**
+```bash
+sudo apt install libreoffice poppler-utils
+```
 
 ### Setup
 

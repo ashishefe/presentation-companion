@@ -4,18 +4,42 @@ set -euo pipefail
 # ──────────────────────────────────────────────────────────
 # Presentation Companion — Setup Script
 # Converts a .pptx to slide PNGs and generates a starter config
+#
+# Prerequisites:
+#   1. LibreOffice  — converts .pptx → PDF
+#   2. poppler OR ImageMagick — splits PDF → individual PNGs
+#
+# Install (macOS):
+#   brew install --cask libreoffice
+#   brew install poppler
+#
+# Install (Ubuntu/Debian):
+#   sudo apt install libreoffice poppler-utils
+#
+# Install (Fedora):
+#   sudo dnf install libreoffice poppler-utils
 # ──────────────────────────────────────────────────────────
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMAGES_DIR="$SCRIPT_DIR/site/images"
 CONFIG_FILE="$SCRIPT_DIR/site/js/config.json"
 
-# ── Check arguments ──
+# ── Usage ──
 if [ $# -lt 1 ]; then
   echo "Usage: ./setup.sh <path-to-presentation.pptx>"
   echo ""
-  echo "This script converts your .pptx to slide images and generates"
-  echo "a starter config.json for your companion site."
+  echo "Converts your .pptx to slide images and generates a starter config.json."
+  echo ""
+  echo "Prerequisites:"
+  echo "  1. LibreOffice  — converts .pptx to PDF"
+  echo "  2. poppler      — splits PDF into per-slide PNGs (recommended)"
+  echo "     OR ImageMagick (alternative)"
+  echo ""
+  echo "Quick install (macOS):"
+  echo "  brew install --cask libreoffice && brew install poppler"
+  echo ""
+  echo "Quick install (Ubuntu):"
+  echo "  sudo apt install libreoffice poppler-utils"
   exit 1
 fi
 
@@ -26,49 +50,117 @@ if [ ! -f "$PPTX_FILE" ]; then
   exit 1
 fi
 
-# ── Check LibreOffice ──
-if ! command -v libreoffice &> /dev/null; then
-  echo "Error: LibreOffice is required but not installed."
+# ── Check ALL prerequisites before doing any work ──
+echo "Checking prerequisites..."
+MISSING=""
+
+# Find LibreOffice
+LIBREOFFICE=""
+if command -v libreoffice &> /dev/null; then
+  LIBREOFFICE="libreoffice"
+elif [ -x "/Applications/LibreOffice.app/Contents/MacOS/soffice" ]; then
+  LIBREOFFICE="/Applications/LibreOffice.app/Contents/MacOS/soffice"
+elif command -v soffice &> /dev/null; then
+  LIBREOFFICE="soffice"
+fi
+
+if [ -z "$LIBREOFFICE" ]; then
+  MISSING="$MISSING  - LibreOffice (converts .pptx to PDF)\n"
+  MISSING="$MISSING      macOS:  brew install --cask libreoffice\n"
+  MISSING="$MISSING      Linux:  sudo apt install libreoffice\n\n"
+else
+  echo "  ✓ LibreOffice found: $LIBREOFFICE"
+fi
+
+# Find PDF-to-PNG converter (poppler preferred, ImageMagick as fallback)
+PDF_CONVERTER=""
+if command -v pdftoppm &> /dev/null; then
+  PDF_CONVERTER="pdftoppm"
+elif command -v magick &> /dev/null; then
+  PDF_CONVERTER="magick"
+elif command -v convert &> /dev/null; then
+  PDF_CONVERTER="convert"
+fi
+
+if [ -z "$PDF_CONVERTER" ]; then
+  MISSING="$MISSING  - poppler or ImageMagick (splits PDF into per-slide images)\n"
+  MISSING="$MISSING      macOS:  brew install poppler        (recommended)\n"
+  MISSING="$MISSING      Linux:  sudo apt install poppler-utils\n"
+  MISSING="$MISSING      Alt:    brew install imagemagick\n\n"
+else
+  echo "  ✓ PDF converter found: $PDF_CONVERTER"
+fi
+
+# Bail if anything is missing
+if [ -n "$MISSING" ]; then
   echo ""
-  echo "Install it:"
-  echo "  macOS:   brew install --cask libreoffice"
-  echo "  Ubuntu:  sudo apt install libreoffice"
-  echo "  Fedora:  sudo dnf install libreoffice"
+  echo "Error: Missing required tools:"
+  echo ""
+  echo -e "$MISSING"
+  echo "Install the missing tools and run this script again."
   exit 1
 fi
 
-# ── Convert PPTX → PNGs ──
-echo "Converting slides to PNG images..."
+echo ""
+
+# ── Step 1: PPTX → PDF ──
+echo "Step 1/3: Converting .pptx to PDF..."
 
 TEMP_DIR=$(mktemp -d)
-libreoffice --headless --convert-to png --outdir "$TEMP_DIR" "$PPTX_FILE" > /dev/null 2>&1
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
-# LibreOffice exports one PNG per slide, but naming varies.
-# We need to rename them to slide-01.png, slide-02.png, etc.
+"$LIBREOFFICE" --headless --convert-to pdf --outdir "$TEMP_DIR" "$PPTX_FILE" > /dev/null 2>&1
+
+PDF_FILE=$(ls "$TEMP_DIR"/*.pdf 2>/dev/null | head -1)
+if [ -z "$PDF_FILE" ]; then
+  echo ""
+  echo "Error: LibreOffice failed to convert the presentation to PDF."
+  echo ""
+  echo "Troubleshooting:"
+  echo "  - Make sure the file is a valid .pptx (not .ppt or .key)"
+  echo "  - Close LibreOffice if it's running (headless mode conflicts with open instances)"
+  echo "  - Try opening the file in LibreOffice manually to check for issues"
+  exit 1
+fi
+
+echo "  ✓ PDF created"
+
+# ── Step 2: PDF → individual PNGs ──
+echo "Step 2/3: Splitting PDF into slide images..."
+
 mkdir -p "$IMAGES_DIR"
-
-# Remove any existing slide images
 rm -f "$IMAGES_DIR"/slide-*.png
 
-# Sort and rename the exported PNGs
+if [ "$PDF_CONVERTER" = "pdftoppm" ]; then
+  pdftoppm -png -r 200 "$PDF_FILE" "$TEMP_DIR/page"
+else
+  # ImageMagick
+  "$PDF_CONVERTER" -density 200 "$PDF_FILE" "$TEMP_DIR/page-%02d.png" 2>/dev/null
+fi
+
+# Rename to slide-01.png, slide-02.png, etc.
 SLIDE_COUNT=0
-for png in $(ls "$TEMP_DIR"/*.png 2>/dev/null | sort); do
+for png in $(ls "$TEMP_DIR"/page-*.png 2>/dev/null | sort); do
   SLIDE_COUNT=$((SLIDE_COUNT + 1))
   PADDED=$(printf "%02d" $SLIDE_COUNT)
   cp "$png" "$IMAGES_DIR/slide-${PADDED}.png"
 done
 
-rm -rf "$TEMP_DIR"
-
 if [ "$SLIDE_COUNT" -eq 0 ]; then
-  echo "Error: No slides were generated. Check that the file is a valid .pptx."
+  echo ""
+  echo "Error: No slide images were generated from the PDF."
+  echo ""
+  echo "Troubleshooting:"
+  echo "  - The PDF was created but may be empty or corrupted"
+  echo "  - Try: pdftoppm -png -r 200 '$PDF_FILE' /tmp/test-page"
+  echo "    to debug the PDF-to-image conversion directly"
   exit 1
 fi
 
-echo "Exported $SLIDE_COUNT slides to site/images/"
+echo "  ✓ $SLIDE_COUNT slides exported to site/images/"
 
-# ── Generate starter config.json ──
-echo "Generating starter config.json..."
+# ── Step 3: Generate starter config.json ──
+echo "Step 3/3: Generating config.json..."
 
 # Build slide titles placeholder array
 SLIDE_TITLES="["
@@ -113,15 +205,22 @@ cat > "$CONFIG_FILE" << CONFIGEOF
 }
 CONFIGEOF
 
+echo "  ✓ config.json created with $SLIDE_COUNT slide placeholders"
+
+# ── Summary ──
 echo ""
-echo "Done! Next steps:"
+echo "════════════════════════════════════════════"
+echo "  Setup complete! $SLIDE_COUNT slides processed."
+echo "════════════════════════════════════════════"
+echo ""
+echo "Next steps:"
 echo ""
 echo "  1. Edit site/js/config.json"
 echo "     - Set your presentation title, author info, and slide titles"
 echo "     - Add section dividers if your presentation has logical sections"
 echo "     - Optionally add contact info and FAQ"
 echo ""
-echo "  2. Generate prompts"
+echo "  2. Generate prompts using any LLM"
 echo "     - Follow the instructions in PROMPT_GUIDE.md"
 echo "     - Save the result as site/js/prompts.json"
 echo ""
@@ -130,5 +229,6 @@ echo "     - npx serve site"
 echo "     - Open http://localhost:3000"
 echo ""
 echo "  4. Deploy"
-echo "     - Push to GitHub, deploy the site/ directory to Vercel, Netlify, or GitHub Pages"
+echo "     - Push to GitHub and deploy the site/ directory"
+echo "     - Works with Vercel, Netlify, GitHub Pages, or any static host"
 echo ""
