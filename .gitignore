@@ -1,0 +1,6 @@
+site/images/*.png
+.DS_Store
+node_modules/
+.env
+*.swp
+*~

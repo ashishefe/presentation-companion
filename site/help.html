@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Use Your Prompts</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <a href="slides.html" class="header-left" style="color: #fff; text-decoration: none;">
+      <span style="font-size: 1.15rem; opacity: 0.85;">&larr;</span>
+      <span class="header-title">How to Use Your Prompts</span>
+    </a>
+    <a href="index.html" class="header-title-link" id="help-header-title" style="font-family: var(--font-serif); font-size: 0.85rem; font-weight: 500;">Companion</a>
+  </header>
+
+  <div class="page-content">
+    <div class="help-container">
+      <h1>Continue Your Learning Journey</h1>
+      <p class="help-subtitle">
+        You've collected personalized prompts from the presentation. Download them as a <code>.md</code> file and upload it to any LLM to start a deep learning conversation.
+      </p>
+
+      <!-- Download + Preview buttons -->
+      <div class="help-actions" id="help-actions">
+        <button class="btn btn-primary" id="help-download-btn">Download .md File</button>
+        <button class="btn btn-outline" id="help-preview-btn">Preview</button>
+      </div>
+      <p class="help-empty-note" id="help-empty-note" style="display:none;">
+        You haven't collected any prompts yet. <a href="slides.html">Go back to the slides</a> and click on some prompts first.
+      </p>
+
+      <h2>Getting Started</h2>
+      <ol class="help-steps">
+        <li>
+          <span class="step-number">1</span>
+          <span>Click <strong>"Download .md File"</strong> above to save your personalized prompts.</span>
+        </li>
+        <li>
+          <span class="step-number">2</span>
+          <span>Open any LLM &mdash; <a href="https://claude.ai" target="_blank">Claude</a>, <a href="https://chatgpt.com" target="_blank">ChatGPT</a>, <a href="https://gemini.google.com" target="_blank">Gemini</a>, or any other &mdash; and upload <strong>both</strong> the <code>.md</code> file <strong>and</strong> the original presentation (<code>.pptx</code>). The <code>.md</code> file gives the LLM your personalized prompts and context; the <code>.pptx</code> gives it the full visual content of every slide.</span>
+        </li>
+        <li>
+          <span class="step-number">3</span>
+          <span>The LLM will pick up your context &mdash; your profession, curiosity, and the topics you explored &mdash; and start a personalized learning conversation.</span>
+        </li>
+        <li>
+          <span class="step-number">4</span>
+          <span><strong>Optional:</strong> Edit the <code>.md</code> file before uploading. Add your own questions, remove prompts you don't need, rearrange the order. The more you make it yours, the better.</span>
+        </li>
+      </ol>
+
+      <h2>How the Prompts Work</h2>
+      <ul>
+        <li>Each prompt is tailored to your profession and curiosity.</li>
+        <li>The file includes only the slides you interacted with &mdash; your personal trail through the presentation.</li>
+        <li>At the end, there's a <strong>meta-prompt</strong> that summarizes your journey and asks the LLM to continue guiding you.</li>
+      </ul>
+
+      <h2>Tips for Best Results</h2>
+      <ul>
+        <li>The <strong>meta-prompt</strong> at the end of the file is yours to customize. Edit it before uploading &mdash; cross-reference a book you've read, a podcast episode that stuck with you, a real problem you're facing at work. The more specific you make it, the better the conversation.</li>
+        <li>Individual prompts work great for deep-diving into specific topics.</li>
+        <li>Feel free to try different LLMs &mdash; each will give you a different perspective on the same material.</li>
+      </ul>
+
+      <!-- Contact card — populated from config if present -->
+      <div class="contact-card" id="contact-card" style="display:none;">
+        <h2>Get in Touch</h2>
+        <p id="contact-bio"></p>
+        <p>Questions, feedback, or ideas? I'd love to hear from you: <a id="contact-email" href=""></a></p>
+      </div>
+
+      <!-- FAQ section — populated from config if present -->
+      <div id="faq-section" style="display:none;">
+        <h2>Frequently Asked Questions</h2>
+        <div id="faq-list"></div>
+      </div>
+
+      <div class="help-back">
+        <button class="btn btn-primary" onclick="window.location.href='slides.html'">
+          &larr; Back to Slides
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div class="preview-overlay" id="preview-overlay">
+    <div class="preview-modal">
+      <div class="preview-header">
+        <h3>Prompt File Preview</h3>
+        <button class="preview-close" id="preview-close">&times;</button>
+      </div>
+      <div class="preview-body" id="preview-body"></div>
+    </div>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    CompanionConfig.load().then(function (config) {
+      // Populate header title
+      var headerTitle = document.getElementById('help-header-title');
+      if (headerTitle) headerTitle.textContent = config.title;
+
+      // Read stored data
+      var intakeRaw = localStorage.getItem(CompanionConfig.storageKey('intake'));
+      var intake = intakeRaw ? JSON.parse(intakeRaw) : null;
+      var collectedRaw = sessionStorage.getItem(CompanionConfig.storageKey('collected'));
+      var collectedPrompts = collectedRaw ? JSON.parse(collectedRaw) : [];
+      var customNotesRaw = sessionStorage.getItem(CompanionConfig.storageKey('custom-notes'));
+      var customNotes = customNotesRaw ? JSON.parse(customNotesRaw) : {};
+      var hasNotes = Object.keys(customNotes).length > 0;
+
+      var downloadBtn = document.getElementById('help-download-btn');
+      var previewBtn = document.getElementById('help-preview-btn');
+      var actionsEl = document.getElementById('help-actions');
+      var emptyNote = document.getElementById('help-empty-note');
+      var overlay = document.getElementById('preview-overlay');
+      var closeBtn = document.getElementById('preview-close');
+      var previewBody = document.getElementById('preview-body');
+
+      // Show empty state if no prompts and no notes
+      if (collectedPrompts.length === 0 && !hasNotes) {
+        actionsEl.style.display = 'none';
+        emptyNote.style.display = 'block';
+      }
+
+      // Download
+      downloadBtn.addEventListener('click', function () {
+        CompanionConfig.triggerDownload(config, intake, collectedPrompts, customNotes);
+      });
+
+      // Preview
+      previewBtn.addEventListener('click', function () {
+        previewBody.textContent = CompanionConfig.generateMd(config, intake, collectedPrompts, customNotes);
+        overlay.classList.add('open');
+      });
+
+      closeBtn.addEventListener('click', function () {
+        overlay.classList.remove('open');
+      });
+
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) overlay.classList.remove('open');
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') overlay.classList.remove('open');
+      });
+
+      // ── Populate contact card from config ──
+      if (config.contact && config.contact.email) {
+        var contactCard = document.getElementById('contact-card');
+        var contactBio = document.getElementById('contact-bio');
+        var contactEmail = document.getElementById('contact-email');
+        contactCard.style.display = '';
+        contactBio.textContent = config.contact.bio || '';
+        contactEmail.href = 'mailto:' + config.contact.email;
+        contactEmail.textContent = config.contact.email;
+      }
+
+      // ── Populate FAQ from config ──
+      if (config.faq && config.faq.length > 0) {
+        var faqSection = document.getElementById('faq-section');
+        var faqList = document.getElementById('faq-list');
+        faqSection.style.display = '';
+        config.faq.forEach(function (item) {
+          var faqItem = document.createElement('div');
+          faqItem.className = 'faq-item';
+          var h3 = document.createElement('h3');
+          h3.textContent = item.question;
+          var p = document.createElement('p');
+          p.innerHTML = item.answer;
+          faqItem.appendChild(h3);
+          faqItem.appendChild(p);
+          faqList.appendChild(faqItem);
+        });
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

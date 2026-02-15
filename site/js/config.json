@@ -1,0 +1,79 @@
+{
+  "title": "Economics of AI",
+  "subtitle": "Interactive Learning Resource",
+  "author": {
+    "name": "Ashish Kulkarni",
+    "institution": "Takshashila Institution",
+    "program": "GCPP Program"
+  },
+  "totalSlides": 20,
+  "storagePrefix": "econ-ai",
+  "downloadPrefix": "economics-of-ai-prompts",
+  "slideTitles": [
+    "Economics of AI",
+    "The Central Tension",
+    "The Pipeline: AI Economics",
+    "UPSTREAM: Cost Structure",
+    "Silicon & Infrastructure",
+    "Data: The New Constraint",
+    "Training vs. Inference",
+    "Energy & Talent",
+    "MIDSTREAM: Market Structure",
+    "The Two-Tier Oligopoly",
+    "Why Oligopoly Persists",
+    "Open Source: Competitive Force",
+    "Supply Chains & Geopolitics",
+    "DOWNSTREAM: Markets & Impacts",
+    "Pricing & Business Models",
+    "The Agentic Economy",
+    "Labor Markets & Productivity",
+    "Who Captures the Gains?",
+    "The Spine: 12 Takeaways",
+    "Thank You"
+  ],
+  "sections": [
+    { "beforeSlide": 4, "label": "Upstream" },
+    { "beforeSlide": 9, "label": "Midstream" },
+    { "beforeSlide": 14, "label": "Downstream" }
+  ],
+  "intro": {
+    "paragraphs": [
+      "This site turns a lecture into something you can actually use afterward. You'll walk through the slides at your own pace, and on each one you'll see small numbered circles marking the ideas worth digging into. Hover over a circle to preview the prompt; click it to copy a question tailored to your background. The star in the top-right corner of each slide is a master prompt that covers the whole slide. Every prompt you click gets collected into a single <code>.md</code> file you can download at the end.",
+      "That file is your conversation starter. Upload it along with the original <code>.pptx</code> presentation into any LLM &mdash; Claude, ChatGPT, Gemini, whichever you prefer &mdash; and it becomes a tutor that already knows who you are and what caught your attention. You can also add your own notes on any slide &mdash; they'll be included in your <code>.md</code> file alongside the prompts you collect. Feel free to edit the file before uploading: add your own questions, remove prompts that don't interest you, rearrange the order. The more you make it yours, the better the conversation will be."
+    ]
+  },
+  "mdExport": {
+    "header": "Personal Learning Prompts",
+    "lectureDescription": "a presentation on the Economics of AI that covered the full value chain: upstream costs (silicon, data, training, energy, talent), midstream market structure (oligopoly, open source, geopolitics), and downstream impacts (pricing, agentic AI, labor markets, inequality)",
+    "footer": [
+      "Generated from the Economics of AI Interactive Learning Resource",
+      "Presentation by Ashish Kulkarni — Takshashila Institution, GCPP Program"
+    ]
+  },
+  "links": {
+    "github": "https://github.com/ashishefe/economics-of-ai",
+    "readingList": "https://docs.google.com/document/d/1j4o7l1jFpya-y3iy2vS22Kx2Ryfbmqmz/edit?usp=sharing&ouid=110215200557602654316&rtpof=true&sd=true"
+  },
+  "contact": {
+    "bio": "I'm an educator experimenting with AI to build better learning experiences. This site is one of those experiments — using AI to help people actually learn from a lecture, rather than just sit through one.",
+    "email": "ashish@econforeverybody.com"
+  },
+  "faq": [
+    {
+      "question": "Why bother doing this?",
+      "answer": "What better application of the economics of AI? It's become cheap enough, intuitive enough, and good enough for all of us to experiment with. This is an experiment in what workflows AI unlocks."
+    },
+    {
+      "question": "Why not just use NotebookLM?",
+      "answer": "We're AND people, not OR people (h/t Navin Kabra). Use this AND NotebookLM. Upload the presentation and <code>.md</code> file into NotebookLM if you like. But this is a more focused way to revise a presentation — cleaner layout, revision-oriented. Use all the tools available, including NotebookLM."
+    },
+    {
+      "question": "Cool project! Can I try it myself?",
+      "answer": "Yes! The GitHub repo is at <a href=\"https://github.com/ashishefe/presentation-companion\" target=\"_blank\">github.com/ashishefe/presentation-companion</a> — it's a template you can use to build a companion site for any presentation."
+    },
+    {
+      "question": "Can I share the PPT, this site, or the GitHub repo?",
+      "answer": "Yes, absolutely — if you think it'll help other people learn better, please share, and thank you in advance."
+    }
+  ]
+}
